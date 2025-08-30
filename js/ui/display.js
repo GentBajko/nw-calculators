@@ -20,7 +20,7 @@ function displayMaterials() {
         div.innerHTML = `
             <span class="font-medium text-gray-900 dark:text-nw-text-light">${mat}</span>
             <div class="flex items-center gap-2">
-                <span class="text-gray-700 dark:text-gray-400">${qty.toLocaleString()}</span>
+                <span class="text-gray-700 dark:text-gray-400">${Math.ceil(qty).toLocaleString()}</span>
                 ${cost > 0 ? `<span class="text-xs text-gray-600 dark:text-gray-500">(${cost.toFixed(2)}g)</span>` : ''}
             </div>
         `;
@@ -58,21 +58,22 @@ function displayRefinedResults(elementId, results, sortByROI = true) {
     
     // Create header
     const header = document.createElement('div');
-    header.className = 'grid grid-cols-7 gap-2 pb-1 border-b border-gray-300 dark:border-nw-border font-bold text-sm text-gray-700 dark:text-nw-text-light';
+    header.className = 'grid grid-cols-8 gap-2 pb-1 border-b border-gray-300 dark:border-nw-border font-bold text-sm text-gray-700 dark:text-nw-text-light';
     header.innerHTML = `
         <div>Item</div>
         <div class="text-center">Qty</div>
         <div class="text-center">Unit Cost</div>
         <div class="text-center">Market</div>
         <div class="text-center">Total Cost</div>
-        <div class="text-center">Total Revenue</div>
+        <div class="text-center">Revenue</div>
+        <div class="text-center">Profit</div>
         <div class="text-center">ROI</div>
     `;
     container.appendChild(header);
     
     if (results.length === 0) {
         const emptyRow = document.createElement('div');
-        emptyRow.className = 'text-center text-gray-500 dark:text-gray-400 py-3 col-span-7 text-sm';
+        emptyRow.className = 'text-center text-gray-500 dark:text-gray-400 py-3 col-span-8 text-sm';
         emptyRow.textContent = 'No materials or prices set';
         container.appendChild(emptyRow);
         return;
@@ -87,7 +88,7 @@ function displayRefinedResults(elementId, results, sortByROI = true) {
     
     results.forEach((result, index) => {
         const row = document.createElement('div');
-        row.className = 'grid grid-cols-7 gap-2 py-1 text-sm rounded px-1 text-gray-700 dark:text-nw-text-light';
+        row.className = 'grid grid-cols-8 gap-2 py-1 text-sm rounded px-1 text-gray-700 dark:text-nw-text-light';
         
         // Assign color based on ROI ranking position, not display position
         let colorClass = 'roi-neutral';
@@ -111,15 +112,17 @@ function displayRefinedResults(elementId, results, sortByROI = true) {
         
         row.classList.add(colorClass);
         
-        const totalCost = result.cost * result.qty;
-        const totalRevenue = result.price * result.qty;
+        const qty = Math.floor(result.qty);  // Output quantities round down (conservative)
+        const totalCost = result.cost * qty;
+        const totalRevenue = result.price * qty;
+        const profit = result.profit * qty;
         
         row.innerHTML = `
             <div class="font-medium truncate">${result.name}</div>
             <div class="text-center">
                 <input type="number" 
                        class="refined-qty-input w-16 px-1 py-0 text-xs text-center rounded border border-gray-300 dark:border-nw-border bg-white dark:bg-nw-dark-bg text-gray-900 dark:text-nw-text-light"
-                       value="${result.qty}"
+                       value="${Math.floor(result.qty)}"
                        min="0"
                        data-item="${result.name}"
                        data-category="${elementId}">
@@ -128,6 +131,7 @@ function displayRefinedResults(elementId, results, sortByROI = true) {
             <div class="text-center">${result.price.toFixed(2)}</div>
             <div class="text-center total-cost">${totalCost.toFixed(2)}</div>
             <div class="text-center total-revenue">${totalRevenue.toFixed(2)}</div>
+            <div class="text-center font-semibold ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">${profit.toFixed(2)}</div>
             <div class="text-center font-bold roi-value">${result.roi.toFixed(0)}%</div>
         `;
         container.appendChild(row);

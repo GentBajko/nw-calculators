@@ -3,23 +3,33 @@ let materials = {};
 let prices = {};
 let sellPrices = {};
 
-function calculateMaterials(item, qty, mats = {}) {
+function calculateMaterials(item, qty, mats = {}, applyBonus = true) {
     if (recipes[item]) {
-        // Check if this item has a crafting bonus
-        const bonus = craftingBonuses[item] || 0;
-        const bonusMultiplier = 1 + (bonus / 100);
+        let adjustedQty = qty;
         
-        // Calculate actual materials needed considering the bonus
-        // If we get 50% more output, we need fewer materials to get the same final quantity
-        const adjustedQty = qty / bonusMultiplier;
+        if (applyBonus) {
+            // Check if this item has a crafting bonus
+            const bonus = craftingBonuses[item] || 0;
+            const bonusMultiplier = 1 + (bonus / 100);
+            
+            // Calculate actual materials needed considering the bonus
+            // If we get 50% more output, we need fewer materials to get the same final quantity
+            adjustedQty = qty / bonusMultiplier;
+        }
         
         for (const [mat, amount] of Object.entries(recipes[item])) {
-            calculateMaterials(mat, amount * adjustedQty, mats);
+            calculateMaterials(mat, amount * adjustedQty, mats, applyBonus);
         }
     } else {
-        mats[item] = (mats[item] || 0) + qty;
+        // Always round up material requirements to ensure we have enough
+        mats[item] = Math.ceil((mats[item] || 0) + qty);
     }
     return mats;
+}
+
+// Function for materials page - gets raw recipe requirements without bonuses
+function calculateRawMaterials(item, qty, mats = {}) {
+    return calculateMaterials(item, qty, mats, false);
 }
 
 function updateCalculations() {

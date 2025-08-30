@@ -1,12 +1,103 @@
 // Crafting bonuses (percentage increase in output)
 const craftingBonuses = {
+    // Leather
     'Coarse Leather': 50,
     'Rugged Leather': 48,
     'Layered Leather': 45,
-    'Infused Leather': 43,
+    'Infused Leather': 38,
     'Dark Leather': 30,
     'Runic Leather': 25,
-    'Prismatic Leather': 20
+    'Prismatic Leather': 20,
+    
+    // Cloth
+    'Linen': 50,
+    'Sateen': 48,
+    'Silk': 45,
+    'Infused Silk': 38,
+    'Spinweave Cloth': 30,
+    'Phoenixweave': 25,
+    'Prismatic Cloth': 20,
+    
+    // Wood
+    'Timber': 50,
+    'Lumber': 48,
+    'Wyrdwood Plank': 45,
+    'Ironwood Plank': 38,
+    'Runewood Plank': 30,
+    'Glittering Ebony': 25,
+    'Prismatic Plank': 20,
+    
+    // Metal
+    'Iron Ingot': 50,
+    'Charcoal': 50,
+    'Steel Ingot': 48,
+    'Starmetal Ingot': 45,
+    'Orichalcum Ingot': 38,
+    'Mythril Ingot': 30,
+    'Asmodeum': 25,
+    'Prismatic Ingot': 20,
+    
+    // Stone
+    'Stone Block': 50,
+    'Stone Brick': 48,
+    'Lodestone Brick': 45,
+    'Obsidian Voidstone': 38,
+    'Runic Voidstone': 30,
+    'Runestone': 25,
+    'Prismatic Block': 20
+};
+
+// Crafting costs (gold per craft)
+const craftCosts = {
+    // Tier 1 (0.01g)
+    'Coarse Leather': 0.01,
+    'Linen': 0.01,
+    'Timber': 0.01,
+    'Iron Ingot': 0.01,
+    'Charcoal': 0.01,
+    'Stone Block': 0.01,
+    
+    // Tier 2 (0.01g)
+    'Rugged Leather': 0.01,
+    'Sateen': 0.01,
+    'Lumber': 0.01,
+    'Steel Ingot': 0.01,
+    'Stone Brick': 0.01,
+    
+    // Tier 3 (0.01g)
+    'Layered Leather': 0.01,
+    'Silk': 0.01,
+    'Wyrdwood Plank': 0.01,
+    'Starmetal Ingot': 0.01,
+    'Lodestone Brick': 0.01,
+    
+    // Tier 4 (0.03g)
+    'Infused Leather': 0.03,
+    'Infused Silk': 0.03,
+    'Ironwood Plank': 0.03,
+    'Orichalcum Ingot': 0.03,
+    'Obsidian Voidstone': 0.03,
+    
+    // Tier 5 (0.05g)
+    'Dark Leather': 0.05,
+    'Spinweave Cloth': 0.05,
+    'Runewood Plank': 0.05,
+    'Mythril Ingot': 0.05,
+    'Runic Voidstone': 0.05,
+    
+    // Daily Limited Tier 5 (0.04g)
+    'Runic Leather': 0.04,
+    'Phoenixweave': 0.04,
+    'Glittering Ebony': 0.04,
+    'Asmodeum': 0.04,
+    'Runestone': 0.04,
+    
+    // Prismatic (0.11g)
+    'Prismatic Leather': 0.11,
+    'Prismatic Cloth': 0.11,
+    'Prismatic Plank': 0.11,
+    'Prismatic Ingot': 0.11,
+    'Prismatic Block': 0.11
 };
 
 // Complete recipe database from crafting.txt

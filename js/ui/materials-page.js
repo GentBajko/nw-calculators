@@ -234,7 +234,7 @@ function calculateCategoryRequirements(targetMaterial, quantity, category) {
     // Find all recipes that use our target material
     const usableRecipes = [];
     craftableItems.forEach(item => {
-        const recipeMaterials = calculateMaterials(item, 1);
+        const recipeMaterials = calculateRawMaterials(item, 1);
         if (recipeMaterials[targetMaterial]) {
             usableRecipes.push({
                 item: item,
@@ -247,7 +247,7 @@ function calculateCategoryRequirements(targetMaterial, quantity, category) {
     // For all materials, calculate based on what they can make
     usableRecipes.forEach(recipe => {
         if (recipe.canMake > 0) {
-            const fullRequirements = calculateMaterials(recipe.item, recipe.canMake);
+            const fullRequirements = calculateRawMaterials(recipe.item, recipe.canMake);
             
             // Add to total requirements (taking the maximum)
             Object.entries(fullRequirements).forEach(([mat, qty]) => {
@@ -306,7 +306,7 @@ function calculateBaseMaterials() {
     const allLeatherCraftables = ['Coarse Leather', 'Rugged Leather', 'Layered Leather', 'Infused Leather', 'Dark Leather', 'Runic Leather', 'Prismatic Leather'];
     
     allLeatherCraftables.forEach(item => {
-        const mats = calculateMaterials(item, 1);
+        const mats = calculateRawMaterials(item, 1);
         let canCraft = Number.MAX_SAFE_INTEGER;
         let totalCost = 0;
         
@@ -335,7 +335,6 @@ function calculateBaseMaterials() {
             
             if (available > 0) {
                 canCraft = Math.min(canCraft, Math.floor(available / needed));
-                totalCost += price * needed;
             } else if (needed > 0) {
                 canCraft = 0;
                 break;
@@ -343,18 +342,48 @@ function calculateBaseMaterials() {
         }
         
         if (canCraft > 0 && canCraft !== Number.MAX_SAFE_INTEGER) {
+            // Calculate total material cost for all crafts
+            for (const [mat, needed] of Object.entries(mats)) {
+                const price = {
+                    'Rawhide': rawhidePrice,
+                    'Thick Hide': thickHidePrice,
+                    'Iron Hide': ironHidePrice,
+                    'Dark Hide': darkHidePrice,
+                    'Scarhide': scarhidePrice,
+                    'Aged Tannin': agedTanninPrice
+                }[mat] || 0;
+                totalCost += price * needed * canCraft;
+            }
+            
             // Apply crafting bonus - we get more items for the same materials
             const actualOutput = Math.floor(canCraft * bonusMultiplier);
+            
             
             // Apply daily limits
             const finalOutput = dailyLimits[item] ? Math.min(actualOutput, dailyLimits[item]) : actualOutput;
             
+            // Craft cost applies to items crafted (before bonus)
+            const craftCost = (craftCosts[item] || 0) * canCraft;
+            const totalCostWithCraft = totalCost + craftCost;
+            
+            // Calculate per-unit cost
+            const unitCost = finalOutput > 0 ? totalCostWithCraft / finalOutput : 0;
+            
+            // Market price and selling fee (6%)
+            const marketPrice = sellPrices[item] || 0;
+            const sellingFee = marketPrice * 0.06;
+            const netPrice = marketPrice - sellingFee;
+            
+            // Profit per unit
+            const profitPerUnit = netPrice - unitCost;
+            
             leatherResults.push({
                 name: item + (dailyLimits[item] ? ` (${dailyLimits[item]}/day)` : '') + (bonus > 0 ? ` +${bonus}%` : ''),
                 qty: finalOutput,
-                cost: totalCost,
-                price: sellPrices[item] || 0,
-                roi: totalCost > 0 ? (((sellPrices[item] || 0) - totalCost) / totalCost * 100) : 0
+                cost: unitCost,
+                price: marketPrice,
+                profit: profitPerUnit,
+                roi: unitCost > 0 ? (profitPerUnit / unitCost * 100) : 0
             });
         }
     });
@@ -390,7 +419,7 @@ function calculateClothMaterials() {
     const allClothCraftables = ['Linen', 'Sateen', 'Silk', 'Infused Silk', 'Spinweave Cloth', 'Phoenixweave', 'Prismatic Cloth'];
     
     allClothCraftables.forEach(item => {
-        const mats = calculateMaterials(item, 1);
+        const mats = calculateRawMaterials(item, 1);
         let canCraft = Number.MAX_SAFE_INTEGER;
         let totalCost = 0;
         
@@ -404,18 +433,8 @@ function calculateClothMaterials() {
                 'Wireweave': wireweaveQty
             }[mat] || 0;
             
-            const price = {
-                'Fibers': fibersPrice,
-                'Silk Threads': silkThreadsPrice,
-                'Wirefiber': wirefiberPrice,
-                'Spinfiber': spinfiberPrice,
-                'Scalecloth': scaleclothPrice,
-                'Wireweave': wireweavePrice
-            }[mat] || 0;
-            
             if (available > 0) {
                 canCraft = Math.min(canCraft, Math.floor(available / needed));
-                totalCost += price * needed;
             } else if (needed > 0) {
                 canCraft = 0;
                 break;
@@ -423,14 +442,49 @@ function calculateClothMaterials() {
         }
         
         if (canCraft > 0 && canCraft !== Number.MAX_SAFE_INTEGER) {
-            if (dailyLimits[item]) canCraft = Math.min(canCraft, dailyLimits[item]);
+            // Calculate total material cost for all crafts
+            for (const [mat, needed] of Object.entries(mats)) {
+                const price = {
+                    'Fibers': fibersPrice,
+                    'Silk Threads': silkThreadsPrice,
+                    'Wirefiber': wirefiberPrice,
+                    'Spinfiber': spinfiberPrice,
+                    'Scalecloth': scaleclothPrice,
+                    'Wireweave': wireweavePrice
+                }[mat] || 0;
+                totalCost += price * needed * canCraft;
+            }
+            
+            // Apply crafting bonus for actual output
+            const bonus = craftingBonuses[item] || 0;
+            const bonusMultiplier = 1 + (bonus / 100);
+            const actualOutput = Math.floor(canCraft * bonusMultiplier);
+            
+            // Apply daily limits
+            const finalOutput = dailyLimits[item] ? Math.min(actualOutput, dailyLimits[item]) : actualOutput;
+            
+            // Craft cost applies to items crafted (before bonus)
+            const craftCost = (craftCosts[item] || 0) * canCraft;
+            const totalCostWithCraft = totalCost + craftCost;
+            
+            // Calculate per-unit cost
+            const unitCost = finalOutput > 0 ? totalCostWithCraft / finalOutput : 0;
+            
+            // Market price and selling fee (6%)
+            const marketPrice = sellPrices[item] || 0;
+            const sellingFee = marketPrice * 0.06;
+            const netPrice = marketPrice - sellingFee;
+            
+            // Profit per unit
+            const profitPerUnit = netPrice - unitCost;
             
             clothResults.push({
-                name: item + (dailyLimits[item] ? ` (${dailyLimits[item]}/day)` : ''),
-                qty: canCraft,
-                cost: totalCost,
-                price: sellPrices[item] || 0,
-                roi: totalCost > 0 ? (((sellPrices[item] || 0) - totalCost) / totalCost * 100) : 0
+                name: item + (dailyLimits[item] ? ` (${dailyLimits[item]}/day)` : '') + (bonus > 0 ? ` +${bonus}%` : ''),
+                qty: finalOutput,
+                cost: unitCost,
+                price: marketPrice,
+                profit: profitPerUnit,
+                roi: unitCost > 0 ? (profitPerUnit / unitCost * 100) : 0
             });
         }
     });
@@ -460,7 +514,7 @@ function calculateWoodMaterials() {
     const allWoodCraftables = ['Timber', 'Lumber', 'Wyrdwood Plank', 'Ironwood Plank', 'Runewood Plank', 'Glittering Ebony', 'Prismatic Plank'];
     
     allWoodCraftables.forEach(item => {
-        const mats = calculateMaterials(item, 1);
+        const mats = calculateRawMaterials(item, 1);
         let canCraft = Number.MAX_SAFE_INTEGER;
         let totalCost = 0;
         
@@ -475,19 +529,8 @@ function calculateWoodMaterials() {
                 'Obsidian Sandpaper': obsidianSandpaperQty
             }[mat] || 0;
             
-            const price = {
-                'Green Wood': greenWoodPrice,
-                'Aged Wood': agedWoodPrice,
-                'Wyrdwood': wyrdwoodPrice,
-                'Ironwood': ironwoodPrice,
-                'Runewood': runewoodPrice,
-                'Wildwood': wildwoodPrice,
-                'Obsidian Sandpaper': obsidianSandpaperPrice
-            }[mat] || 0;
-            
             if (available > 0) {
                 canCraft = Math.min(canCraft, Math.floor(available / needed));
-                totalCost += price * needed;
             } else if (needed > 0) {
                 canCraft = 0;
                 break;
@@ -495,14 +538,50 @@ function calculateWoodMaterials() {
         }
         
         if (canCraft > 0 && canCraft !== Number.MAX_SAFE_INTEGER) {
-            if (dailyLimits[item]) canCraft = Math.min(canCraft, dailyLimits[item]);
+            // Calculate total material cost for all crafts
+            for (const [mat, needed] of Object.entries(mats)) {
+                const price = {
+                    'Green Wood': greenWoodPrice,
+                    'Aged Wood': agedWoodPrice,
+                    'Wyrdwood': wyrdwoodPrice,
+                    'Ironwood': ironwoodPrice,
+                    'Runewood': runewoodPrice,
+                    'Wildwood': wildwoodPrice,
+                    'Obsidian Sandpaper': obsidianSandpaperPrice
+                }[mat] || 0;
+                totalCost += price * needed * canCraft;
+            }
+            
+            // Apply crafting bonus for actual output
+            const bonus = craftingBonuses[item] || 0;
+            const bonusMultiplier = 1 + (bonus / 100);
+            const actualOutput = Math.floor(canCraft * bonusMultiplier);
+            
+            // Apply daily limits
+            const finalOutput = dailyLimits[item] ? Math.min(actualOutput, dailyLimits[item]) : actualOutput;
+            
+            // Craft cost applies to items crafted (before bonus)
+            const craftCost = (craftCosts[item] || 0) * canCraft;
+            const totalCostWithCraft = totalCost + craftCost;
+            
+            // Calculate per-unit cost
+            const unitCost = finalOutput > 0 ? totalCostWithCraft / finalOutput : 0;
+            
+            // Market price and selling fee (6%)
+            const marketPrice = sellPrices[item] || 0;
+            const sellingFee = marketPrice * 0.06;
+            const netPrice = marketPrice - sellingFee;
+            
+            // Profit per unit
+            const profitPerUnit = netPrice - unitCost;
             
             woodResults.push({
-                name: item + (dailyLimits[item] ? ` (${dailyLimits[item]}/day)` : ''),
-                qty: canCraft,
-                cost: totalCost,
-                price: sellPrices[item] || 0,
-                roi: totalCost > 0 ? (((sellPrices[item] || 0) - totalCost) / totalCost * 100) : 0
+                name: item + (dailyLimits[item] ? ` (${dailyLimits[item]}/day)` : '') + (bonus > 0 ? ` +${bonus}%` : ''),
+                qty: finalOutput,
+                cost: unitCost,
+                price: marketPrice,
+                profit: profitPerUnit,
+                roi: unitCost > 0 ? (profitPerUnit / unitCost * 100) : 0
             });
         }
     });
@@ -539,7 +618,7 @@ function calculateMetalMaterials() {
     
     allMetalCraftables.forEach(item => {
         // Get the full material requirements (flattened to base materials)
-        const fullMats = calculateMaterials(item, 1);
+        const fullMats = calculateRawMaterials(item, 1);
         let canCraft = Number.MAX_SAFE_INTEGER;
         let totalCost = 0;
         let missingMaterial = false;
@@ -575,12 +654,28 @@ function calculateMetalMaterials() {
             // Apply daily limits
             const finalOutput = dailyLimits[item] ? Math.min(actualOutput, dailyLimits[item]) : actualOutput;
             
+            // Craft cost applies to items crafted (before bonus)
+            const craftCost = (craftCosts[item] || 0) * canCraft;
+            const totalCostWithCraft = totalCost + craftCost;
+            
+            // Calculate per-unit cost
+            const unitCost = finalOutput > 0 ? totalCostWithCraft / finalOutput : 0;
+            
+            // Market price and selling fee (6%)
+            const marketPrice = sellPrices[item] || 0;
+            const sellingFee = marketPrice * 0.06;
+            const netPrice = marketPrice - sellingFee;
+            
+            // Profit per unit
+            const profitPerUnit = netPrice - unitCost;
+            
             metalResults.push({
                 name: item + (dailyLimits[item] ? ` (${dailyLimits[item]}/day)` : '') + (bonus > 0 ? ` +${bonus}%` : ''),
                 qty: finalOutput,
-                cost: totalCost,
-                price: sellPrices[item] || 0,
-                roi: totalCost > 0 ? (((sellPrices[item] || 0) - totalCost) / totalCost * 100) : 0
+                cost: unitCost,
+                price: marketPrice,
+                profit: profitPerUnit,
+                roi: unitCost > 0 ? (profitPerUnit / unitCost * 100) : 0
             });
         }
     });
@@ -608,7 +703,7 @@ function calculateStoneMaterials() {
     const allStoneCraftables = ['Stone Block', 'Stone Brick', 'Lodestone Brick', 'Obsidian Voidstone', 'Runic Voidstone', 'Runestone', 'Prismatic Block'];
     
     allStoneCraftables.forEach(item => {
-        const mats = calculateMaterials(item, 1);
+        const mats = calculateRawMaterials(item, 1);
         let canCraft = Number.MAX_SAFE_INTEGER;
         let totalCost = 0;
         
@@ -622,18 +717,8 @@ function calculateStoneMaterials() {
                 'Obsidian Sandpaper': obsidianSandpaperQty
             }[mat] || 0;
             
-            const price = {
-                'Stone': stonePrice,
-                'Lodestone': lodestonePrice,
-                'Loamy Lodestone': loamyLodestonePrice,
-                'Powerful Gemstone Dust': powerfulGemstoneDustPrice,
-                'Pure Solvent': pureSolventPrice,
-                'Obsidian Sandpaper': obsidianSandpaperPrice
-            }[mat] || 0;
-            
             if (available > 0) {
                 canCraft = Math.min(canCraft, Math.floor(available / needed));
-                totalCost += price * needed;
             } else if (needed > 0) {
                 canCraft = 0;
                 break;
@@ -641,14 +726,49 @@ function calculateStoneMaterials() {
         }
         
         if (canCraft > 0 && canCraft !== Number.MAX_SAFE_INTEGER) {
-            if (dailyLimits[item]) canCraft = Math.min(canCraft, dailyLimits[item]);
+            // Calculate total material cost for all crafts
+            for (const [mat, needed] of Object.entries(mats)) {
+                const price = {
+                    'Stone': stonePrice,
+                    'Lodestone': lodestonePrice,
+                    'Loamy Lodestone': loamyLodestonePrice,
+                    'Powerful Gemstone Dust': powerfulGemstoneDustPrice,
+                    'Pure Solvent': pureSolventPrice,
+                    'Obsidian Sandpaper': obsidianSandpaperPrice
+                }[mat] || 0;
+                totalCost += price * needed * canCraft;
+            }
+            
+            // Apply crafting bonus for actual output
+            const bonus = craftingBonuses[item] || 0;
+            const bonusMultiplier = 1 + (bonus / 100);
+            const actualOutput = Math.floor(canCraft * bonusMultiplier);
+            
+            // Apply daily limits
+            const finalOutput = dailyLimits[item] ? Math.min(actualOutput, dailyLimits[item]) : actualOutput;
+            
+            // Craft cost applies to items crafted (before bonus)
+            const craftCost = (craftCosts[item] || 0) * canCraft;
+            const totalCostWithCraft = totalCost + craftCost;
+            
+            // Calculate per-unit cost
+            const unitCost = finalOutput > 0 ? totalCostWithCraft / finalOutput : 0;
+            
+            // Market price and selling fee (6%)
+            const marketPrice = sellPrices[item] || 0;
+            const sellingFee = marketPrice * 0.06;
+            const netPrice = marketPrice - sellingFee;
+            
+            // Profit per unit
+            const profitPerUnit = netPrice - unitCost;
             
             stoneResults.push({
-                name: item + (dailyLimits[item] ? ` (${dailyLimits[item]}/day)` : ''),
-                qty: canCraft,
-                cost: totalCost,
-                price: sellPrices[item] || 0,
-                roi: totalCost > 0 ? (((sellPrices[item] || 0) - totalCost) / totalCost * 100) : 0
+                name: item + (dailyLimits[item] ? ` (${dailyLimits[item]}/day)` : '') + (bonus > 0 ? ` +${bonus}%` : ''),
+                qty: finalOutput,
+                cost: unitCost,
+                price: marketPrice,
+                profit: profitPerUnit,
+                roi: unitCost > 0 ? (profitPerUnit / unitCost * 100) : 0
             });
         }
     });
