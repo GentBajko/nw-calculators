@@ -58,12 +58,12 @@ function displayRefinedResults(elementId, results, sortByROI = true) {
     
     // Create compact header for materials page
     const header = document.createElement('div');
-    header.className = 'grid grid-cols-5 gap-1 pb-1 border-b border-gray-300 dark:border-nw-border font-bold text-xs text-gray-700 dark:text-nw-text-light';
+    header.className = 'grid grid-cols-4 gap-1 pb-1 border-b border-gray-300 dark:border-nw-border font-bold text-xs text-gray-700 dark:text-nw-text-light';
     header.innerHTML = `
-        <div class="col-span-2 pl-1">Item</div>
-        <div class="text-center">Q</div>
-        <div class="text-center">$</div>
-        <div class="text-center">%</div>
+        <div class="pl-1">Item</div>
+        <div class="text-center">Qty</div>
+        <div class="text-center">Profit</div>
+        <div class="text-center">ROI</div>
     `;
     container.appendChild(header);
     
@@ -99,7 +99,7 @@ function displayRefinedResults(elementId, results, sortByROI = true) {
         
         if (result) {
             // Item can be crafted
-            row.className = 'grid grid-cols-5 gap-1 py-0.5 text-xs rounded px-1 text-gray-700 dark:text-nw-text-light';
+            row.className = 'grid grid-cols-4 gap-1 py-0.5 text-xs rounded px-1 text-gray-700 dark:text-nw-text-light';
             
             // Assign color based on ROI ranking
             let colorClass = 'roi-neutral';
@@ -125,152 +125,34 @@ function displayRefinedResults(elementId, results, sortByROI = true) {
             
             const qty = Math.floor(result.qty);
             const profit = result.profit * qty;
-            const displayName = result.name.length > 15 ? result.name.substring(0, 14) + '..' : result.name;
+            const displayName = result.name.length > 12 ? result.name.substring(0, 11) + '..' : result.name;
             
             row.innerHTML = `
-                <div class="col-span-2 font-medium truncate pl-1" title="${result.name}">${displayName}</div>
-                <div class="text-center">
-                    <input type="number" 
-                           class="refined-qty-input w-10 px-0 py-0 text-xs text-center rounded border border-gray-300 dark:border-nw-border bg-white dark:bg-nw-dark-bg text-gray-900 dark:text-nw-text-light"
-                           value="${qty}"
-                           min="0"
-                           data-item="${result.name}"
-                           data-category="${elementId}">
-                </div>
+                <div class="font-medium truncate pl-1" title="${result.name}">${displayName}</div>
+                <div class="text-center font-bold">${qty}</div>
                 <div class="text-center font-semibold ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">${profit >= 0 ? '+' : ''}${profit.toFixed(0)}</div>
                 <div class="text-center font-bold">${result.roi.toFixed(0)}%</div>
             `;
-            
-            // Add event listener to the qty input
-            const qtyInput = row.querySelector('.refined-qty-input');
-            if (qtyInput) {
-                qtyInput.addEventListener('input', (e) => {
-                    handleRefinedQtyChange(e.target, result, row);
-                });
-            }
         } else {
-            // Item cannot currently be crafted but input is still functional for reverse calculation
-            row.className = 'grid grid-cols-5 gap-1 py-0.5 text-xs rounded px-1 text-gray-600 dark:text-gray-400';
-            const displayName = itemName.length > 15 ? itemName.substring(0, 14) + '..' : itemName;
+            // Item cannot be crafted - show as disabled
+            row.className = 'grid grid-cols-4 gap-1 py-0.5 text-xs rounded px-1 text-gray-400 dark:text-gray-600 opacity-50';
+            const displayName = itemName.length > 12 ? itemName.substring(0, 11) + '..' : itemName;
             const dailyLimit = dailyLimits[itemName] ? ` (${dailyLimits[itemName]}/d)` : '';
             
             row.innerHTML = `
-                <div class="col-span-2 truncate pl-1" title="${itemName}">${displayName}${dailyLimit}</div>
-                <div class="text-center">
-                    <input type="number" 
-                           class="reverse-qty-input w-10 px-0 py-0 text-xs text-center rounded border border-gray-300 dark:border-nw-border bg-white dark:bg-nw-dark-bg text-gray-900 dark:text-nw-text-light"
-                           value="0"
-                           min="0"
-                           data-item="${itemName}"
-                           data-category="${elementId}">
-                </div>
+                <div class="truncate pl-1" title="${itemName}">${displayName}${dailyLimit}</div>
+                <div class="text-center">0</div>
                 <div class="text-center">-</div>
                 <div class="text-center">-</div>
             `;
-            
-            // Add event listener for reverse calculation
-            const qtyInput = row.querySelector('.reverse-qty-input');
-            if (qtyInput) {
-                qtyInput.addEventListener('input', (e) => {
-                    handleReverseQtyChange(e.target, itemName, elementId);
-                });
-            }
         }
         
         container.appendChild(row);
     });
 }
 
-function handleReverseQtyChange(input, itemName, categoryId) {
-    const newQty = parseInt(input.value) || 0;
-    
-    // Clear all other inputs in this category first
-    const container = document.getElementById(categoryId);
-    if (container) {
-        const allInputs = container.querySelectorAll('.refined-qty-input, .reverse-qty-input');
-        allInputs.forEach(otherInput => {
-            if (otherInput !== input) {
-                otherInput.value = 0;
-            }
-        });
-    }
-    
-    if (newQty > 0) {
-        // Account for crafting bonus - calculate how many times we need to craft
-        const bonus = craftingBonuses[itemName] || 0;
-        const outputPerCraft = 1 + (bonus / 100);
-        const timesToCraft = Math.ceil(newQty / outputPerCraft);
-        
-        // Calculate materials needed for the actual number of crafts
-        const mats = calculateRawMaterials(itemName, timesToCraft);
-        
-        // Determine category from elementId
-        const category = categoryId.replace('RefinedOutput', '');
-        
-        // Update the base material inputs WITHOUT triggering recalculation
-        updateCategoryMaterialInputs(mats, category);
-    } else {
-        // Clear base material inputs if quantity is 0
-        const category = categoryId.replace('RefinedOutput', '');
-        updateCategoryMaterialInputs({}, category);
-    }
-}
-
-function handleRefinedQtyChange(input, originalResult, row) {
-    const newQty = parseInt(input.value) || 0;
-    const categoryId = input.dataset.category;
-    
-    // Clear all other inputs in this category first
-    const container = document.getElementById(categoryId);
-    if (container) {
-        const allInputs = container.querySelectorAll('.refined-qty-input, .reverse-qty-input');
-        allInputs.forEach(otherInput => {
-            if (otherInput !== input) {
-                otherInput.value = 0;
-            }
-        });
-    }
-    
-    if (newQty > 0) {
-        // Get the clean item name
-        const itemName = originalResult.name.replace(/ \(\d+\/day\)/, '').replace(/ \+\d+%/, '');
-        
-        // Account for crafting bonus - calculate how many times we need to craft
-        const bonus = craftingBonuses[itemName] || 0;
-        const outputPerCraft = 1 + (bonus / 100);
-        const timesToCraft = Math.ceil(newQty / outputPerCraft);
-        
-        // Calculate materials needed for the actual number of crafts
-        const mats = calculateRawMaterials(itemName, timesToCraft);
-        
-        // Determine category from elementId
-        const category = categoryId.replace('RefinedOutput', '');
-        
-        // Update the base material inputs WITHOUT triggering recalculation
-        updateCategoryMaterialInputs(mats, category);
-        
-        // Update the row's calculated values for compact layout
-        const profit = originalResult.profit * newQty;
-        const roi = originalResult.cost > 0 ? (originalResult.profit / originalResult.cost * 100) : 0;
-        
-        // Update profit column (column 3)
-        const profitCell = row.children[3];
-        if (profitCell) {
-            profitCell.className = `text-center font-semibold ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`;
-            profitCell.textContent = (profit >= 0 ? '+' : '') + profit.toFixed(0);
-        }
-        
-        // Update ROI column (column 4) - ROI doesn't change with quantity
-        const roiCell = row.children[4];
-        if (roiCell) {
-            roiCell.textContent = roi.toFixed(0) + '%';
-        }
-    } else {
-        // Clear base material inputs
-        const category = categoryId.replace('RefinedOutput', '');
-        updateCategoryMaterialInputs({}, category);
-    }
-}
+// These functions are no longer needed since we removed the QTY inputs
+// Keeping updateCategoryMaterialInputs since it's still used by the base material inputs
 
 function updateCategoryMaterialInputs(materials, category) {
     const categoryMaterials = {
