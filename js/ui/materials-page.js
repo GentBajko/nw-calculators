@@ -61,8 +61,8 @@ function generateMaterialCategories() {
         { name: 'LEATHER', icon: '🟫', items: ['Rawhide', 'Thick Hide', 'Iron Hide', 'Dark Hide', 'Scarhide', 'Aged Tannin'], color: 'amber' },
         { name: 'CLOTH', icon: '🟦', items: ['Fibers', 'Silk Threads', 'Wirefiber', 'Spinfiber', 'Scalecloth', 'Wireweave'], color: 'blue' },
         { name: 'WOOD', icon: '🟩', items: ['Green Wood', 'Aged Wood', 'Wyrdwood', 'Ironwood', 'Runewood', 'Wildwood', 'Obsidian Sandpaper'], color: 'green' },
-        { name: 'METAL', icon: '⬛', items: ['Iron Ore', 'Starmetal Ore', 'Orichalcum Ore', 'Mythril Ore', 'Cinnabar', 'Obsidian Flux'], color: 'gray' },
-        { name: 'STONE', icon: '⬜', items: ['Stone', 'Lodestone', 'Loamy Lodestone', 'Powerful Gemstone Dust', 'Pure Solvent'], color: 'stone' }
+        { name: 'METAL', icon: '⬛', items: ['Iron Ore', 'Starmetal Ore', 'Orichalcum Ore', 'Mythril Ore', 'Cinnabar', 'Obsidian Flux', 'Charcoal'], color: 'gray' },
+        { name: 'STONE', icon: '⬜', items: ['Stone', 'Lodestone', 'Loamy Lodestone', 'Powerful Gemstone Dust', 'Pure Solvent', 'Obsidian Sandpaper'], color: 'stone' }
     ];
     
     return categories.map(category => `
@@ -72,13 +72,16 @@ function generateMaterialCategories() {
             </div>
             <div class="category-content p-2 space-y-1">
                 ${category.items.map(item => {
-                    const inputId = item.replace(/\s/g, '');
+                    // Create unique IDs for items that appear in multiple categories
+                    const baseId = item.replace(/\s/g, '');
+                    const inputId = (item === 'Obsidian Sandpaper' && category.name === 'STONE') ? 'StoneObsidianSandpaper' : baseId;
                     return `
                         <div class="flex gap-2 items-center">
                             <label class="text-xs flex-1 text-gray-700 dark:text-nw-text-light">${item}</label>
                             <input type="number" id="base${inputId}" placeholder="0" min="0" 
                                    class="material-input w-20 px-2 py-1 text-xs rounded border border-gray-300 dark:border-nw-border bg-white dark:bg-nw-dark-bg text-gray-900 dark:text-nw-text-light"
-                                   data-material="${item}">
+                                   data-material="${item}"
+                                   data-category="${category.name.toLowerCase()}">
                         </div>
                     `;
                 }).join('')}
@@ -161,82 +164,76 @@ function initializeBaseMaterialPrices() {
 
 function handleMaterialInput(event) {
     const material = event.target.dataset.material;
+    const inputCategory = event.target.dataset.category;
     const quantity = parseInt(event.target.value) || 0;
     
-    // Clear all other inputs first when user makes a new primary input
-    if (quantity > 0) {
-        clearAllMaterialInputs(material);
-    }
+    // Determine which category this material belongs to based on the input's category
+    const categories = {
+        'leather': ['Rawhide', 'Thick Hide', 'Iron Hide', 'Dark Hide', 'Scarhide', 'Aged Tannin'],
+        'cloth': ['Fibers', 'Silk Threads', 'Wirefiber', 'Spinfiber', 'Scalecloth', 'Wireweave'],
+        'wood': ['Green Wood', 'Aged Wood', 'Wyrdwood', 'Ironwood', 'Runewood', 'Wildwood', 'Obsidian Sandpaper'],
+        'metal': ['Iron Ore', 'Starmetal Ore', 'Orichalcum Ore', 'Mythril Ore', 'Cinnabar', 'Obsidian Flux', 'Charcoal'],
+        'stone': ['Stone', 'Lodestone', 'Loamy Lodestone', 'Powerful Gemstone Dust', 'Pure Solvent', 'Obsidian Sandpaper']
+    };
     
-    if (quantity === 0) {
-        // If user cleared the input, recalculate without clearing others
-        calculateBaseMaterials();
-        return;
-    }
+    // Use the input's category attribute to determine which category we're in
+    let materialCategory = inputCategory;
     
-    // Calculate actual material requirements using the recipe system
-    const requirements = calculateAllMaterialRequirements(material, quantity);
-    
-    // Update all input fields with calculated requirements (now always overwrite)
-    Object.entries(requirements).forEach(([requiredMaterial, requiredQty]) => {
-        if (requiredMaterial !== material) { // Don't update the material we're inputting
-            const inputId = 'base' + requiredMaterial.replace(/\s/g, '');
-            const input = document.getElementById(inputId);
-            if (input) {
-                input.value = requiredQty;
+    if (quantity > 0 && materialCategory) {
+        // Clear other inputs in the same category first
+        const categoryMaterials = categories[materialCategory];
+        categoryMaterials.forEach(mat => {
+            if (mat !== material) {
+                // Use special ID for Stone's Obsidian Sandpaper
+                const inputId = (mat === 'Obsidian Sandpaper' && materialCategory === 'stone') 
+                    ? 'baseStoneObsidianSandpaper' 
+                    : 'base' + mat.replace(/\s/g, '');
+                const input = document.getElementById(inputId);
+                if (input) {
+                    input.value = '';
+                }
             }
-        }
-    });
+        });
+        
+        // Calculate what can be made with this material
+        const requirements = calculateCategoryRequirements(material, quantity, materialCategory);
+        
+        // Update other inputs in the same category
+        Object.entries(requirements).forEach(([requiredMaterial, requiredQty]) => {
+            if (categoryMaterials.includes(requiredMaterial) && requiredMaterial !== material) {
+                // Use special ID for Stone's Obsidian Sandpaper
+                const inputId = (requiredMaterial === 'Obsidian Sandpaper' && materialCategory === 'stone')
+                    ? 'baseStoneObsidianSandpaper'
+                    : 'base' + requiredMaterial.replace(/\s/g, '');
+                const input = document.getElementById(inputId);
+                if (input) {
+                    input.value = requiredQty;
+                }
+            }
+        });
+    }
     
     // Trigger recalculation
     calculateBaseMaterials();
 }
 
-function clearAllMaterialInputs(exceptMaterial) {
-    // Define material categories
-    const categories = {
-        'leather': ['Rawhide', 'Thick Hide', 'Iron Hide', 'Dark Hide', 'Scarhide', 'Aged Tannin'],
-        'cloth': ['Fibers', 'Silk Threads', 'Wirefiber', 'Spinfiber', 'Scalecloth', 'Wireweave'],
-        'wood': ['Green Wood', 'Aged Wood', 'Wyrdwood', 'Ironwood', 'Runewood', 'Wildwood', 'Obsidian Sandpaper'],
-        'metal': ['Iron Ore', 'Starmetal Ore', 'Orichalcum Ore', 'Mythril Ore', 'Cinnabar', 'Obsidian Flux'],
-        'stone': ['Stone', 'Lodestone', 'Loamy Lodestone', 'Powerful Gemstone Dust', 'Pure Solvent']
-    };
-    
-    // Find which category the except material belongs to
-    let targetCategory = null;
-    for (const [category, materials] of Object.entries(categories)) {
-        if (materials.includes(exceptMaterial)) {
-            targetCategory = category;
-            break;
-        }
-    }
-    
-    // Only clear inputs within the same category
-    if (targetCategory) {
-        const categoryMaterials = categories[targetCategory];
-        document.querySelectorAll('.material-input').forEach(input => {
-            if (categoryMaterials.includes(input.dataset.material) && input.dataset.material !== exceptMaterial) {
-                input.value = '';
-            }
-        });
-    }
-}
-
-function calculateAllMaterialRequirements(targetMaterial, quantity) {
+function calculateCategoryRequirements(targetMaterial, quantity, category) {
     const allRequirements = {};
     
-    // Get all possible recipes that use this material
-    const allCraftableItems = [
-        'Coarse Leather', 'Rugged Leather', 'Layered Leather', 'Infused Leather', 'Dark Leather', 'Runic Leather', 'Prismatic Leather',
-        'Linen', 'Sateen', 'Silk', 'Infused Silk', 'Spinweave Cloth', 'Phoenixweave', 'Prismatic Cloth',
-        'Timber', 'Lumber', 'Wyrdwood Plank', 'Ironwood Plank', 'Runewood Plank', 'Glittering Ebony', 'Prismatic Plank',
-        'Iron Ingot', 'Steel Ingot', 'Starmetal Ingot', 'Orichalcum Ingot', 'Mythril Ingot', 'Asmodeum', 'Prismatic Ingot',
-        'Stone Block', 'Stone Brick', 'Lodestone Brick', 'Obsidian Voidstone', 'Runic Voidstone', 'Runestone', 'Prismatic Block'
-    ];
+    // Define craftables per category
+    const categoryCraftables = {
+        'leather': ['Coarse Leather', 'Rugged Leather', 'Layered Leather', 'Infused Leather', 'Dark Leather', 'Runic Leather', 'Prismatic Leather'],
+        'cloth': ['Linen', 'Sateen', 'Silk', 'Infused Silk', 'Spinweave Cloth', 'Phoenixweave', 'Prismatic Cloth'],
+        'wood': ['Timber', 'Lumber', 'Wyrdwood Plank', 'Ironwood Plank', 'Runewood Plank', 'Glittering Ebony', 'Prismatic Plank'],
+        'metal': ['Iron Ingot', 'Steel Ingot', 'Starmetal Ingot', 'Orichalcum Ingot', 'Mythril Ingot', 'Asmodeum', 'Prismatic Ingot'],
+        'stone': ['Stone Block', 'Stone Brick', 'Lodestone Brick', 'Obsidian Voidstone', 'Runic Voidstone', 'Runestone', 'Prismatic Block']
+    };
+    
+    const craftableItems = categoryCraftables[category] || [];
     
     // Find all recipes that use our target material
     const usableRecipes = [];
-    allCraftableItems.forEach(item => {
+    craftableItems.forEach(item => {
         const recipeMaterials = calculateMaterials(item, 1);
         if (recipeMaterials[targetMaterial]) {
             usableRecipes.push({
@@ -247,7 +244,7 @@ function calculateAllMaterialRequirements(targetMaterial, quantity) {
         }
     });
     
-    // Calculate requirements for each recipe we can make
+    // For all materials, calculate based on what they can make
     usableRecipes.forEach(recipe => {
         if (recipe.canMake > 0) {
             const fullRequirements = calculateMaterials(recipe.item, recipe.canMake);
@@ -260,8 +257,32 @@ function calculateAllMaterialRequirements(targetMaterial, quantity) {
             });
         }
     });
+    
+    // Special additional handling for Iron Ore - also check what Steel Ingot needs
+    if (targetMaterial === 'Iron Ore' && category === 'metal') {
+        // Iron Ore makes Iron Ingot at 4:1 ratio
+        const ironIngots = Math.floor(quantity / 4);
+        if (ironIngots > 0) {
+            // Check if we can make Steel with those Iron Ingots
+            const steelRecipe = recipes['Steel Ingot'];
+            if (steelRecipe && steelRecipe['Iron Ingot']) {
+                const steelIngots = Math.floor(ironIngots / steelRecipe['Iron Ingot']);
+                if (steelIngots > 0) {
+                    // Add Steel's requirements if not already added
+                    if (steelRecipe['Obsidian Flux']) {
+                        allRequirements['Obsidian Flux'] = Math.max(allRequirements['Obsidian Flux'] || 0, steelIngots * steelRecipe['Obsidian Flux']);
+                    }
+                    if (steelRecipe['Charcoal']) {
+                        allRequirements['Charcoal'] = Math.max(allRequirements['Charcoal'] || 0, steelIngots * steelRecipe['Charcoal']);
+                    }
+                }
+            }
+        }
+    }
+    
     return allRequirements;
 }
+
 
 function calculateBaseMaterials() {
     // Leather calculations  
@@ -492,84 +513,77 @@ function calculateWoodMaterials() {
 function calculateMetalMaterials() {
     const metalResults = [];
     
-    const ironOreQty = parseInt(document.getElementById('baseIronOre')?.value) || 0;
-    const starmetalOreQty = parseInt(document.getElementById('baseStarmetalOre')?.value) || 0;
-    const orichalcumOreQty = parseInt(document.getElementById('baseOrichalcumOre')?.value) || 0;
-    const mythrilOreQty = parseInt(document.getElementById('baseMythrilOre')?.value) || 0;
-    const cinnabarQty = parseInt(document.getElementById('baseCinnabar')?.value) || 0;
-    const obsidianFluxQty = parseInt(document.getElementById('baseObsidianFlux')?.value) || 0;
-    const greenWoodForCharcoal = parseInt(document.getElementById('baseGreenWood')?.value) || 0;
+    // Get base material quantities
+    const baseResources = {
+        'Iron Ore': parseInt(document.getElementById('baseIronOre')?.value) || 0,
+        'Starmetal Ore': parseInt(document.getElementById('baseStarmetalOre')?.value) || 0,
+        'Orichalcum Ore': parseInt(document.getElementById('baseOrichalcumOre')?.value) || 0,
+        'Mythril Ore': parseInt(document.getElementById('baseMythrilOre')?.value) || 0,
+        'Cinnabar': parseInt(document.getElementById('baseCinnabar')?.value) || 0,
+        'Obsidian Flux': parseInt(document.getElementById('baseObsidianFlux')?.value) || 0,
+        'Charcoal': parseInt(document.getElementById('baseCharcoal')?.value) || 0
+    };
     
-    const ironOrePrice = parseFloat(document.getElementById('priceIronOre')?.value) || prices['Iron Ore'] || 0;
-    const starmetalOrePrice = parseFloat(document.getElementById('priceStarmetalOre')?.value) || prices['Starmetal Ore'] || 0;
-    const orichalcumOrePrice = parseFloat(document.getElementById('priceOrichalcumOre')?.value) || prices['Orichalcum Ore'] || 0;
-    const mythrilOrePrice = parseFloat(document.getElementById('priceMythrilOre')?.value) || prices['Mythril Ore'] || 0;
-    const cinnabarPrice = parseFloat(document.getElementById('priceCinnabar')?.value) || prices['Cinnabar'] || 0;
-    const obsidianFluxPrice = parseFloat(document.getElementById('priceObsidianFlux')?.value) || prices['Obsidian Flux'] || 0;
-    const greenWoodPrice = parseFloat(document.getElementById('priceGreenWood')?.value) || prices['Green Wood'] || 0;
-    const charcoalPrice = greenWoodPrice * 2;
+    // Get prices
+    const basePrices = {
+        'Iron Ore': parseFloat(document.getElementById('priceIronOre')?.value) || prices['Iron Ore'] || 0,
+        'Starmetal Ore': parseFloat(document.getElementById('priceStarmetalOre')?.value) || prices['Starmetal Ore'] || 0,
+        'Orichalcum Ore': parseFloat(document.getElementById('priceOrichalcumOre')?.value) || prices['Orichalcum Ore'] || 0,
+        'Mythril Ore': parseFloat(document.getElementById('priceMythrilOre')?.value) || prices['Mythril Ore'] || 0,
+        'Cinnabar': parseFloat(document.getElementById('priceCinnabar')?.value) || prices['Cinnabar'] || 0,
+        'Obsidian Flux': parseFloat(document.getElementById('priceObsidianFlux')?.value) || prices['Obsidian Flux'] || 0,
+        'Charcoal': parseFloat(document.getElementById('priceCharcoal')?.value) || prices['Charcoal'] || 0
+    };
     
     const allMetalCraftables = ['Iron Ingot', 'Steel Ingot', 'Starmetal Ingot', 'Orichalcum Ingot', 'Mythril Ingot', 'Asmodeum', 'Prismatic Ingot'];
     
     allMetalCraftables.forEach(item => {
-        const mats = calculateMaterials(item, 1);
+        // Get the full material requirements (flattened to base materials)
+        const fullMats = calculateMaterials(item, 1);
         let canCraft = Number.MAX_SAFE_INTEGER;
         let totalCost = 0;
+        let missingMaterial = false;
         
-        for (const [mat, needed] of Object.entries(mats)) {
-            const available = {
-                'Iron Ore': ironOreQty,
-                'Starmetal Ore': starmetalOreQty,
-                'Orichalcum Ore': orichalcumOreQty,
-                'Mythril Ore': mythrilOreQty,
-                'Cinnabar': cinnabarQty,
-                'Obsidian Flux': obsidianFluxQty,
-                'Green Wood': greenWoodForCharcoal
-            }[mat] || 0;
-            
-            const price = {
-                'Iron Ore': ironOrePrice,
-                'Starmetal Ore': starmetalOrePrice,
-                'Orichalcum Ore': orichalcumOrePrice,
-                'Mythril Ore': mythrilOrePrice,
-                'Cinnabar': cinnabarPrice,
-                'Obsidian Flux': obsidianFluxPrice,
-                'Green Wood': greenWoodPrice
-            }[mat] || 0;
-            
-            if (available > 0) {
-                canCraft = Math.min(canCraft, Math.floor(available / needed));
-                totalCost += price * needed;
-            } else if (needed > 0) {
-                canCraft = 0;
-                break;
+        // Check if we have enough of each base material
+        for (const [mat, needed] of Object.entries(fullMats)) {
+            // Only check base materials that we track
+            if (baseResources.hasOwnProperty(mat)) {
+                const available = baseResources[mat];
+                const price = basePrices[mat];
+                
+                if (needed > 0) {
+                    if (available >= needed) {
+                        canCraft = Math.min(canCraft, Math.floor(available / needed));
+                        totalCost += price * needed;
+                    } else {
+                        // Not enough of this material
+                        canCraft = 0;
+                        missingMaterial = true;
+                        break;
+                    }
+                }
             }
         }
         
-        if (canCraft > 0 && canCraft !== Number.MAX_SAFE_INTEGER) {
-            if (dailyLimits[item]) canCraft = Math.min(canCraft, dailyLimits[item]);
+        // Only add to results if we can craft at least 1
+        if (canCraft > 0 && canCraft !== Number.MAX_SAFE_INTEGER && !missingMaterial) {
+            // Apply crafting bonus for actual output
+            const bonus = craftingBonuses[item] || 0;
+            const bonusMultiplier = 1 + (bonus / 100);
+            const actualOutput = Math.floor(canCraft * bonusMultiplier);
+            
+            // Apply daily limits
+            const finalOutput = dailyLimits[item] ? Math.min(actualOutput, dailyLimits[item]) : actualOutput;
             
             metalResults.push({
-                name: item + (dailyLimits[item] ? ` (${dailyLimits[item]}/day)` : ''),
-                qty: canCraft,
+                name: item + (dailyLimits[item] ? ` (${dailyLimits[item]}/day)` : '') + (bonus > 0 ? ` +${bonus}%` : ''),
+                qty: finalOutput,
                 cost: totalCost,
                 price: sellPrices[item] || 0,
                 roi: totalCost > 0 ? (((sellPrices[item] || 0) - totalCost) / totalCost * 100) : 0
             });
         }
     });
-    
-    // Also add Charcoal as a craftable
-    if (greenWoodForCharcoal >= 2) {
-        const charcoalQty = Math.floor(greenWoodForCharcoal / 2);
-        metalResults.push({
-            name: 'Charcoal',
-            qty: charcoalQty,
-            cost: greenWoodPrice * 2,
-            price: sellPrices['Charcoal'] || 0,
-            roi: (greenWoodPrice * 2) > 0 ? (((sellPrices['Charcoal'] || 0) - (greenWoodPrice * 2)) / (greenWoodPrice * 2) * 100) : 0
-        });
-    }
     
     displayRefinedResults('metalRefinedOutput', metalResults, true);
 }
@@ -582,7 +596,7 @@ function calculateStoneMaterials() {
     const loamyLodestoneQty = parseInt(document.getElementById('baseLoamyLodestone')?.value) || 0;
     const powerfulGemstoneDustQty = parseInt(document.getElementById('basePowerfulGemstoneDust')?.value) || 0;
     const pureSolventQty = parseInt(document.getElementById('basePureSolvent')?.value) || 0;
-    const obsidianSandpaperQty = parseInt(document.getElementById('baseObsidianSandpaper')?.value) || 0;
+    const obsidianSandpaperQty = parseInt(document.getElementById('baseStoneObsidianSandpaper')?.value) || 0;
     
     const stonePrice = parseFloat(document.getElementById('priceStone')?.value) || prices['Stone'] || 0;
     const lodestonePrice = parseFloat(document.getElementById('priceLodestone')?.value) || prices['Lodestone'] || 0;

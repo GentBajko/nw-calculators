@@ -116,14 +116,91 @@ function displayRefinedResults(elementId, results, sortByROI = true) {
         
         row.innerHTML = `
             <div class="font-medium truncate">${result.name}</div>
-            <div class="text-center">${result.qty.toLocaleString()}</div>
+            <div class="text-center">
+                <input type="number" 
+                       class="refined-qty-input w-16 px-1 py-0 text-xs text-center rounded border border-gray-300 dark:border-nw-border bg-white dark:bg-nw-dark-bg text-gray-900 dark:text-nw-text-light"
+                       value="${result.qty}"
+                       min="0"
+                       data-item="${result.name}"
+                       data-category="${elementId}">
+            </div>
             <div class="text-center">${result.cost.toFixed(2)}</div>
             <div class="text-center">${result.price.toFixed(2)}</div>
-            <div class="text-center">${totalCost.toFixed(2)}</div>
-            <div class="text-center">${totalRevenue.toFixed(2)}</div>
-            <div class="text-center font-bold">${result.roi.toFixed(0)}%</div>
+            <div class="text-center total-cost">${totalCost.toFixed(2)}</div>
+            <div class="text-center total-revenue">${totalRevenue.toFixed(2)}</div>
+            <div class="text-center font-bold roi-value">${result.roi.toFixed(0)}%</div>
         `;
         container.appendChild(row);
+        
+        // Add event listener to the qty input
+        const qtyInput = row.querySelector('.refined-qty-input');
+        if (qtyInput) {
+            qtyInput.addEventListener('input', (e) => {
+                handleRefinedQtyChange(e.target, result, row);
+            });
+        }
+    });
+}
+
+function handleRefinedQtyChange(input, originalResult, row) {
+    const newQty = parseInt(input.value) || 0;
+    const categoryId = input.dataset.category;
+    
+    // Calculate materials needed for this item with new quantity
+    const itemName = originalResult.name.replace(/ \(\d+\/day\)/, '').replace(/ \+\d+%/, '');
+    const mats = calculateMaterials(itemName, newQty);
+    
+    // Update the base material inputs based on category
+    if (categoryId === 'leatherRefinedOutput') {
+        updateCategoryMaterialInputs(mats, 'leather');
+    } else if (categoryId === 'clothRefinedOutput') {
+        updateCategoryMaterialInputs(mats, 'cloth');
+    } else if (categoryId === 'woodRefinedOutput') {
+        updateCategoryMaterialInputs(mats, 'wood');
+    } else if (categoryId === 'metalRefinedOutput') {
+        updateCategoryMaterialInputs(mats, 'metal');
+    } else if (categoryId === 'stoneRefinedOutput') {
+        updateCategoryMaterialInputs(mats, 'stone');
+    }
+    
+    // Update the row's calculated values
+    const totalCost = originalResult.cost * newQty;
+    const totalRevenue = originalResult.price * newQty;
+    const roi = totalCost > 0 ? ((totalRevenue - totalCost) / totalCost * 100) : 0;
+    
+    row.querySelector('.total-cost').textContent = totalCost.toFixed(2);
+    row.querySelector('.total-revenue').textContent = totalRevenue.toFixed(2);
+    row.querySelector('.roi-value').textContent = roi.toFixed(0) + '%';
+}
+
+function updateCategoryMaterialInputs(materials, category) {
+    const categoryMaterials = {
+        'leather': ['Rawhide', 'Thick Hide', 'Iron Hide', 'Dark Hide', 'Scarhide', 'Aged Tannin'],
+        'cloth': ['Fibers', 'Silk Threads', 'Wirefiber', 'Spinfiber', 'Scalecloth', 'Wireweave'],
+        'wood': ['Green Wood', 'Aged Wood', 'Wyrdwood', 'Ironwood', 'Runewood', 'Wildwood', 'Obsidian Sandpaper'],
+        'metal': ['Iron Ore', 'Starmetal Ore', 'Orichalcum Ore', 'Mythril Ore', 'Cinnabar', 'Obsidian Flux', 'Charcoal'],
+        'stone': ['Stone', 'Lodestone', 'Loamy Lodestone', 'Powerful Gemstone Dust', 'Pure Solvent', 'Obsidian Sandpaper']
+    };
+    
+    // Clear inputs for this category first
+    const materialsToUpdate = categoryMaterials[category] || [];
+    materialsToUpdate.forEach(mat => {
+        const inputId = 'base' + mat.replace(/\s/g, '');
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.value = '';
+        }
+    });
+    
+    // Set new values from calculated materials
+    Object.entries(materials).forEach(([mat, qty]) => {
+        if (materialsToUpdate.includes(mat)) {
+            const inputId = 'base' + mat.replace(/\s/g, '');
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.value = qty;
+            }
+        }
     });
 }
 
