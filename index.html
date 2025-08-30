@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New World Aeternum Crafting Calculator</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tailwind Configuration -->
+    <script src="js/tailwind-config.js"></script>
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="dark min-h-screen transition-colors duration-300">
+    <!-- Dark mode gradient background -->
+    <div class="fixed inset-0 gradient-dark dark:block hidden"></div>
+    <!-- Light mode gradient background -->
+    <div class="fixed inset-0 gradient-light dark:hidden block"></div>
+    
+    <div class="relative z-10 w-full px-3">
+        <!-- Header -->
+        <div class="bg-white dark:bg-nw-dark-bg-secondary rounded-lg shadow-lg p-4 mb-4">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <h1 class="text-2xl md:text-3xl font-bold text-nw-teal-dark dark:text-nw-gold-bright text-shadow-md flex items-center gap-2">
+                    ⚒️ New World Crafting Calculator
+                </h1>
+                <div class="flex flex-wrap gap-2">
+                    <button class="px-3 py-1.5 text-sm rounded-lg border-2 border-nw-teal-dark dark:border-nw-gold text-nw-teal-dark dark:text-nw-gold hover:bg-nw-teal-dark dark:hover:bg-nw-gold hover:text-white dark:hover:text-nw-dark-bg transition-colors" onclick="exportPrices()">
+                        📥 Export
+                    </button>
+                    <label class="px-3 py-1.5 text-sm rounded-lg border-2 border-nw-teal-dark dark:border-nw-gold text-nw-teal-dark dark:text-nw-gold hover:bg-nw-teal-dark dark:hover:bg-nw-gold hover:text-white dark:hover:text-nw-dark-bg transition-colors cursor-pointer">
+                        📤 Import
+                        <input type="file" class="hidden" id="importFile" accept=".json" onchange="importPrices(event)">
+                    </label>
+                    <button class="px-3 py-1.5 text-sm rounded-lg border-2 border-nw-teal-dark dark:border-nw-gold text-nw-teal-dark dark:text-nw-gold hover:bg-nw-teal-dark dark:hover:bg-nw-gold hover:text-white dark:hover:text-nw-dark-bg transition-colors" onclick="loadSamplePrices()">
+                        🎲 Sample
+                    </button>
+                    <button class="px-3 py-1.5 text-sm rounded-lg border-2 border-nw-teal-dark dark:border-nw-gold text-nw-teal-dark dark:text-nw-gold hover:bg-nw-teal-dark dark:hover:bg-nw-gold hover:text-white dark:hover:text-nw-dark-bg transition-colors" onclick="clearAllPrices()">
+                        🗑️ Clear
+                    </button>
+                    <button class="px-3 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-nw-dark-bg text-gray-800 dark:text-nw-text-light hover:bg-gray-200 dark:hover:bg-nw-dark-bg-tertiary transition-colors" onclick="toggleDarkMode()">
+                        <span class="dark:hidden">🌙</span>
+                        <span class="hidden dark:inline">☀️</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page Tabs -->
+        <div class="flex gap-2 mb-4 border-b-2 border-gray-200 dark:border-nw-border">
+            <button class="page-tab px-4 py-2 font-medium transition-colors text-nw-teal-dark dark:text-nw-gold border-b-4 border-nw-teal-dark dark:border-nw-gold" onclick="showCraftingPage()">
+                🎯 Crafting Calculator
+            </button>
+            <button class="page-tab px-4 py-2 font-medium transition-colors text-gray-600 dark:text-gray-400 border-b-3 border-transparent hover:text-nw-teal-dark dark:hover:text-nw-gold" onclick="showMaterialsPage()">
+                🌿 Base Materials Analysis
+            </button>
+        </div>
+        
+        <!-- Crafting Page -->
+        <div id="craftingPage" class="page-content"></div>
+        
+        <!-- Materials Analysis Page -->
+        <div id="materialsPage" class="page-content hidden"></div>
+    </div>
+    
+    <!-- Load JavaScript modules -->
+    <script src="js/data/recipes.js"></script>
+    <script src="js/data/materials.js"></script>
+    <script src="js/core/calculator.js"></script>
+    <script src="js/core/storage.js"></script>
+    <script src="js/ui/pricing-table.js"></script>
+    <script src="js/ui/crafting-page.js"></script>
+    <script src="js/ui/materials-page.js"></script>
+    <script src="js/ui/display.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
