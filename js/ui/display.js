@@ -56,125 +56,220 @@ function displayRefinedResults(elementId, results, sortByROI = true) {
     
     container.innerHTML = '';
     
-    // Create header
+    // Create compact header for materials page
     const header = document.createElement('div');
-    header.className = 'grid grid-cols-8 gap-2 pb-1 border-b border-gray-300 dark:border-nw-border font-bold text-sm text-gray-700 dark:text-nw-text-light';
+    header.className = 'grid grid-cols-5 gap-1 pb-1 border-b border-gray-300 dark:border-nw-border font-bold text-xs text-gray-700 dark:text-nw-text-light';
     header.innerHTML = `
-        <div>Item</div>
-        <div class="text-center">Qty</div>
-        <div class="text-center">Unit Cost</div>
-        <div class="text-center">Market</div>
-        <div class="text-center">Total Cost</div>
-        <div class="text-center">Revenue</div>
-        <div class="text-center">Profit</div>
-        <div class="text-center">ROI</div>
+        <div class="col-span-2 pl-1">Item</div>
+        <div class="text-center">Q</div>
+        <div class="text-center">$</div>
+        <div class="text-center">%</div>
     `;
     container.appendChild(header);
     
-    if (results.length === 0) {
-        const emptyRow = document.createElement('div');
-        emptyRow.className = 'text-center text-gray-500 dark:text-gray-400 py-3 col-span-8 text-sm';
-        emptyRow.textContent = 'No materials or prices set';
-        container.appendChild(emptyRow);
-        return;
-    }
+    // Always show all possible craftables for this category
+    const allCraftables = {
+        'leatherRefinedOutput': ['Coarse Leather', 'Rugged Leather', 'Layered Leather', 'Infused Leather', 'Dark Leather', 'Runic Leather', 'Prismatic Leather'],
+        'clothRefinedOutput': ['Linen', 'Sateen', 'Silk', 'Infused Silk', 'Spinweave Cloth', 'Phoenixweave', 'Prismatic Cloth'],
+        'woodRefinedOutput': ['Timber', 'Lumber', 'Wyrdwood Plank', 'Ironwood Plank', 'Runewood Plank', 'Glittering Ebony', 'Prismatic Plank'],
+        'metalRefinedOutput': ['Iron Ingot', 'Steel Ingot', 'Starmetal Ingot', 'Orichalcum Ingot', 'Mythril Ingot', 'Asmodeum', 'Prismatic Ingot'],
+        'stoneRefinedOutput': ['Stone Block', 'Stone Brick', 'Lodestone Brick', 'Obsidian Voidstone', 'Runic Voidstone', 'Runestone', 'Prismatic Block']
+    };
     
-    // Create ROI-sorted copy for color ranking, but keep original order for display
+    const categoryItems = allCraftables[elementId] || [];
+    
+    // Create a map of results for quick lookup
+    const resultsMap = {};
+    results.forEach(r => {
+        const baseName = r.name.replace(/ \(\d+\/day\)/, '').replace(/ \+\d+%/, '');
+        resultsMap[baseName] = r;
+    });
+    
+    // Create ROI-sorted copy for color ranking
     let colorRanking = [];
-    if (sortByROI) {
+    if (sortByROI && results.length > 0) {
         const sortedByROI = [...results].sort((a, b) => b.roi - a.roi);
         colorRanking = sortedByROI.map(item => item.name);
     }
     
-    results.forEach((result, index) => {
+    // Display all items, even if not craftable
+    categoryItems.forEach(itemName => {
+        const result = resultsMap[itemName];
         const row = document.createElement('div');
-        row.className = 'grid grid-cols-8 gap-2 py-1 text-sm rounded px-1 text-gray-700 dark:text-nw-text-light';
         
-        // Assign color based on ROI ranking position, not display position
-        let colorClass = 'roi-neutral';
-        if (sortByROI && colorRanking.length > 0) {
-            const roiRank = colorRanking.indexOf(result.name);
-            const totalItems = colorRanking.length;
-            const position = roiRank / Math.max(1, totalItems - 1);
+        if (result) {
+            // Item can be crafted
+            row.className = 'grid grid-cols-5 gap-1 py-0.5 text-xs rounded px-1 text-gray-700 dark:text-nw-text-light';
             
-            if (position <= 0.2) {
-                colorClass = 'roi-best';      // Top 20% ROI - Strong green
-            } else if (position <= 0.4) {
-                colorClass = 'roi-good';      // Next 20% ROI - Light green
-            } else if (position <= 0.6) {
-                colorClass = 'roi-neutral';   // Middle 20% ROI - Yellow
-            } else if (position <= 0.8) {
-                colorClass = 'roi-bad';       // Next 20% ROI - Orange
-            } else {
-                colorClass = 'roi-worst';     // Bottom 20% ROI - Red
+            // Assign color based on ROI ranking
+            let colorClass = 'roi-neutral';
+            if (sortByROI && colorRanking.length > 0) {
+                const roiRank = colorRanking.indexOf(result.name);
+                const totalItems = colorRanking.length;
+                const position = roiRank / Math.max(1, totalItems - 1);
+                
+                if (position <= 0.2) {
+                    colorClass = 'roi-best';
+                } else if (position <= 0.4) {
+                    colorClass = 'roi-good';
+                } else if (position <= 0.6) {
+                    colorClass = 'roi-neutral';
+                } else if (position <= 0.8) {
+                    colorClass = 'roi-bad';
+                } else {
+                    colorClass = 'roi-worst';
+                }
+            }
+            
+            row.classList.add(colorClass);
+            
+            const qty = Math.floor(result.qty);
+            const profit = result.profit * qty;
+            const displayName = result.name.length > 15 ? result.name.substring(0, 14) + '..' : result.name;
+            
+            row.innerHTML = `
+                <div class="col-span-2 font-medium truncate pl-1" title="${result.name}">${displayName}</div>
+                <div class="text-center">
+                    <input type="number" 
+                           class="refined-qty-input w-10 px-0 py-0 text-xs text-center rounded border border-gray-300 dark:border-nw-border bg-white dark:bg-nw-dark-bg text-gray-900 dark:text-nw-text-light"
+                           value="${qty}"
+                           min="0"
+                           data-item="${result.name}"
+                           data-category="${elementId}">
+                </div>
+                <div class="text-center font-semibold ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">${profit >= 0 ? '+' : ''}${profit.toFixed(0)}</div>
+                <div class="text-center font-bold">${result.roi.toFixed(0)}%</div>
+            `;
+            
+            // Add event listener to the qty input
+            const qtyInput = row.querySelector('.refined-qty-input');
+            if (qtyInput) {
+                qtyInput.addEventListener('input', (e) => {
+                    handleRefinedQtyChange(e.target, result, row);
+                });
+            }
+        } else {
+            // Item cannot currently be crafted but input is still functional for reverse calculation
+            row.className = 'grid grid-cols-5 gap-1 py-0.5 text-xs rounded px-1 text-gray-600 dark:text-gray-400';
+            const displayName = itemName.length > 15 ? itemName.substring(0, 14) + '..' : itemName;
+            const dailyLimit = dailyLimits[itemName] ? ` (${dailyLimits[itemName]}/d)` : '';
+            
+            row.innerHTML = `
+                <div class="col-span-2 truncate pl-1" title="${itemName}">${displayName}${dailyLimit}</div>
+                <div class="text-center">
+                    <input type="number" 
+                           class="reverse-qty-input w-10 px-0 py-0 text-xs text-center rounded border border-gray-300 dark:border-nw-border bg-white dark:bg-nw-dark-bg text-gray-900 dark:text-nw-text-light"
+                           value="0"
+                           min="0"
+                           data-item="${itemName}"
+                           data-category="${elementId}">
+                </div>
+                <div class="text-center">-</div>
+                <div class="text-center">-</div>
+            `;
+            
+            // Add event listener for reverse calculation
+            const qtyInput = row.querySelector('.reverse-qty-input');
+            if (qtyInput) {
+                qtyInput.addEventListener('input', (e) => {
+                    handleReverseQtyChange(e.target, itemName, elementId);
+                });
             }
         }
         
-        row.classList.add(colorClass);
-        
-        const qty = Math.floor(result.qty);  // Output quantities round down (conservative)
-        const totalCost = result.cost * qty;
-        const totalRevenue = result.price * qty;
-        const profit = result.profit * qty;
-        
-        row.innerHTML = `
-            <div class="font-medium truncate">${result.name}</div>
-            <div class="text-center">
-                <input type="number" 
-                       class="refined-qty-input w-16 px-1 py-0 text-xs text-center rounded border border-gray-300 dark:border-nw-border bg-white dark:bg-nw-dark-bg text-gray-900 dark:text-nw-text-light"
-                       value="${Math.floor(result.qty)}"
-                       min="0"
-                       data-item="${result.name}"
-                       data-category="${elementId}">
-            </div>
-            <div class="text-center">${result.cost.toFixed(2)}</div>
-            <div class="text-center">${result.price.toFixed(2)}</div>
-            <div class="text-center total-cost">${totalCost.toFixed(2)}</div>
-            <div class="text-center total-revenue">${totalRevenue.toFixed(2)}</div>
-            <div class="text-center font-semibold ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">${profit.toFixed(2)}</div>
-            <div class="text-center font-bold roi-value">${result.roi.toFixed(0)}%</div>
-        `;
         container.appendChild(row);
-        
-        // Add event listener to the qty input
-        const qtyInput = row.querySelector('.refined-qty-input');
-        if (qtyInput) {
-            qtyInput.addEventListener('input', (e) => {
-                handleRefinedQtyChange(e.target, result, row);
-            });
-        }
     });
+}
+
+function handleReverseQtyChange(input, itemName, categoryId) {
+    const newQty = parseInt(input.value) || 0;
+    
+    // Clear all other inputs in this category first
+    const container = document.getElementById(categoryId);
+    if (container) {
+        const allInputs = container.querySelectorAll('.refined-qty-input, .reverse-qty-input');
+        allInputs.forEach(otherInput => {
+            if (otherInput !== input) {
+                otherInput.value = 0;
+            }
+        });
+    }
+    
+    if (newQty > 0) {
+        // Account for crafting bonus - calculate how many times we need to craft
+        const bonus = craftingBonuses[itemName] || 0;
+        const outputPerCraft = 1 + (bonus / 100);
+        const timesToCraft = Math.ceil(newQty / outputPerCraft);
+        
+        // Calculate materials needed for the actual number of crafts
+        const mats = calculateRawMaterials(itemName, timesToCraft);
+        
+        // Determine category from elementId
+        const category = categoryId.replace('RefinedOutput', '');
+        
+        // Update the base material inputs WITHOUT triggering recalculation
+        updateCategoryMaterialInputs(mats, category);
+    } else {
+        // Clear base material inputs if quantity is 0
+        const category = categoryId.replace('RefinedOutput', '');
+        updateCategoryMaterialInputs({}, category);
+    }
 }
 
 function handleRefinedQtyChange(input, originalResult, row) {
     const newQty = parseInt(input.value) || 0;
     const categoryId = input.dataset.category;
     
-    // Calculate materials needed for this item with new quantity
-    const itemName = originalResult.name.replace(/ \(\d+\/day\)/, '').replace(/ \+\d+%/, '');
-    const mats = calculateMaterials(itemName, newQty);
-    
-    // Update the base material inputs based on category
-    if (categoryId === 'leatherRefinedOutput') {
-        updateCategoryMaterialInputs(mats, 'leather');
-    } else if (categoryId === 'clothRefinedOutput') {
-        updateCategoryMaterialInputs(mats, 'cloth');
-    } else if (categoryId === 'woodRefinedOutput') {
-        updateCategoryMaterialInputs(mats, 'wood');
-    } else if (categoryId === 'metalRefinedOutput') {
-        updateCategoryMaterialInputs(mats, 'metal');
-    } else if (categoryId === 'stoneRefinedOutput') {
-        updateCategoryMaterialInputs(mats, 'stone');
+    // Clear all other inputs in this category first
+    const container = document.getElementById(categoryId);
+    if (container) {
+        const allInputs = container.querySelectorAll('.refined-qty-input, .reverse-qty-input');
+        allInputs.forEach(otherInput => {
+            if (otherInput !== input) {
+                otherInput.value = 0;
+            }
+        });
     }
     
-    // Update the row's calculated values
-    const totalCost = originalResult.cost * newQty;
-    const totalRevenue = originalResult.price * newQty;
-    const roi = totalCost > 0 ? ((totalRevenue - totalCost) / totalCost * 100) : 0;
-    
-    row.querySelector('.total-cost').textContent = totalCost.toFixed(2);
-    row.querySelector('.total-revenue').textContent = totalRevenue.toFixed(2);
-    row.querySelector('.roi-value').textContent = roi.toFixed(0) + '%';
+    if (newQty > 0) {
+        // Get the clean item name
+        const itemName = originalResult.name.replace(/ \(\d+\/day\)/, '').replace(/ \+\d+%/, '');
+        
+        // Account for crafting bonus - calculate how many times we need to craft
+        const bonus = craftingBonuses[itemName] || 0;
+        const outputPerCraft = 1 + (bonus / 100);
+        const timesToCraft = Math.ceil(newQty / outputPerCraft);
+        
+        // Calculate materials needed for the actual number of crafts
+        const mats = calculateRawMaterials(itemName, timesToCraft);
+        
+        // Determine category from elementId
+        const category = categoryId.replace('RefinedOutput', '');
+        
+        // Update the base material inputs WITHOUT triggering recalculation
+        updateCategoryMaterialInputs(mats, category);
+        
+        // Update the row's calculated values for compact layout
+        const profit = originalResult.profit * newQty;
+        const roi = originalResult.cost > 0 ? (originalResult.profit / originalResult.cost * 100) : 0;
+        
+        // Update profit column (column 3)
+        const profitCell = row.children[3];
+        if (profitCell) {
+            profitCell.className = `text-center font-semibold ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`;
+            profitCell.textContent = (profit >= 0 ? '+' : '') + profit.toFixed(0);
+        }
+        
+        // Update ROI column (column 4) - ROI doesn't change with quantity
+        const roiCell = row.children[4];
+        if (roiCell) {
+            roiCell.textContent = roi.toFixed(0) + '%';
+        }
+    } else {
+        // Clear base material inputs
+        const category = categoryId.replace('RefinedOutput', '');
+        updateCategoryMaterialInputs({}, category);
+    }
 }
 
 function updateCategoryMaterialInputs(materials, category) {
@@ -186,10 +281,16 @@ function updateCategoryMaterialInputs(materials, category) {
         'stone': ['Stone', 'Lodestone', 'Loamy Lodestone', 'Powerful Gemstone Dust', 'Pure Solvent', 'Obsidian Sandpaper']
     };
     
+    // Set a flag to prevent event handler feedback loop
+    window.updatingMaterialInputs = true;
+    
     // Clear inputs for this category first
     const materialsToUpdate = categoryMaterials[category] || [];
     materialsToUpdate.forEach(mat => {
-        const inputId = 'base' + mat.replace(/\s/g, '');
+        // Handle special case for Stone's Obsidian Sandpaper
+        const inputId = (mat === 'Obsidian Sandpaper' && category === 'stone') 
+            ? 'baseStoneObsidianSandpaper' 
+            : 'base' + mat.replace(/\s/g, '');
         const input = document.getElementById(inputId);
         if (input) {
             input.value = '';
@@ -199,13 +300,21 @@ function updateCategoryMaterialInputs(materials, category) {
     // Set new values from calculated materials
     Object.entries(materials).forEach(([mat, qty]) => {
         if (materialsToUpdate.includes(mat)) {
-            const inputId = 'base' + mat.replace(/\s/g, '');
+            // Handle special case for Stone's Obsidian Sandpaper
+            const inputId = (mat === 'Obsidian Sandpaper' && category === 'stone')
+                ? 'baseStoneObsidianSandpaper'
+                : 'base' + mat.replace(/\s/g, '');
             const input = document.getElementById(inputId);
             if (input) {
-                input.value = qty;
+                input.value = Math.ceil(qty);
             }
         }
     });
+    
+    // Clear the flag after a short delay to allow events to settle
+    setTimeout(() => {
+        window.updatingMaterialInputs = false;
+    }, 10);
 }
 
 function toggleCategory(header) {

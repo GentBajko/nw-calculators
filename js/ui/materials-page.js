@@ -3,46 +3,46 @@ function generateMaterialsPage() {
     const materialsPage = document.getElementById('materialsPage');
     
     materialsPage.innerHTML = `
-        <div class="grid grid-cols-1 xl:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 xl:grid-cols-4 gap-3">
             <!-- Main Content - Materials Analysis (3/4 width) -->
-            <div class="xl:col-span-3 space-y-4">
-                <!-- Base Materials Input Section -->
-                <div class="bg-white dark:bg-nw-dark-bg-secondary rounded-lg shadow-lg p-4">
-                    <h2 class="text-xl font-bold text-nw-teal-dark dark:text-nw-gold mb-4 pb-2 border-b-2 border-gray-200 dark:border-nw-border">
+            <div class="xl:col-span-3 space-y-3">
+                <!-- Base Materials Input Section - Compact -->
+                <div class="bg-white dark:bg-nw-dark-bg-secondary rounded-lg shadow-lg p-3">
+                    <h2 class="text-lg font-bold text-nw-teal-dark dark:text-nw-gold mb-2 pb-1 border-b border-gray-200 dark:border-nw-border">
                         📦 BASE MATERIALS INPUT
                     </h2>
                     
-                    <!-- 5 Categories in one row -->
-                    <div class="grid grid-cols-5 gap-3">
-                        ${generateMaterialCategories()}
+                    <!-- 5 Categories in one row - Compact -->
+                    <div class="grid grid-cols-5 gap-2">
+                        ${generateCompactMaterialCategories()}
                     </div>
                 </div>
                 
-                <!-- Analysis Results Section -->
-                <div class="bg-white dark:bg-nw-dark-bg-secondary rounded-lg shadow-lg p-4">
-                    <h2 class="text-xl font-bold text-nw-teal-dark dark:text-nw-gold mb-4 pb-2 border-b-2 border-gray-200 dark:border-nw-border">
+                <!-- Analysis Results Section - All 5 categories always visible -->
+                <div class="bg-white dark:bg-nw-dark-bg-secondary rounded-lg shadow-lg p-3">
+                    <h2 class="text-lg font-bold text-nw-teal-dark dark:text-nw-gold mb-2 pb-1 border-b border-gray-200 dark:border-nw-border">
                         📈 CRAFTING ANALYSIS
                     </h2>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                        <div>
-                            <h3 class="text-sm font-bold text-amber-700 dark:text-nw-gold mb-2">🟫 Leather Results</h3>
-                            <div id="leatherRefinedOutput" class="bg-gray-50 dark:bg-nw-dark-bg-tertiary p-2 rounded min-h-[100px]"></div>
+                    <div class="grid grid-cols-5 gap-2">
+                        <div class="bg-gray-50 dark:bg-nw-dark-bg-tertiary rounded p-1">
+                            <h3 class="text-xs font-bold text-amber-700 dark:text-nw-gold mb-1 text-center">🟫 LEATHER</h3>
+                            <div id="leatherRefinedOutput" class="text-xs max-h-48 overflow-y-auto"></div>
                         </div>
-                        <div>
-                            <h3 class="text-sm font-bold text-blue-700 dark:text-blue-400 mb-2">🟦 Cloth Results</h3>
-                            <div id="clothRefinedOutput" class="bg-gray-50 dark:bg-nw-dark-bg-tertiary p-2 rounded min-h-[100px]"></div>
+                        <div class="bg-gray-50 dark:bg-nw-dark-bg-tertiary rounded p-1">
+                            <h3 class="text-xs font-bold text-blue-700 dark:text-blue-400 mb-1 text-center">🟦 CLOTH</h3>
+                            <div id="clothRefinedOutput" class="text-xs max-h-48 overflow-y-auto"></div>
                         </div>
-                        <div>
-                            <h3 class="text-sm font-bold text-green-700 dark:text-green-400 mb-2">🟩 Wood Results</h3>
-                            <div id="woodRefinedOutput" class="bg-gray-50 dark:bg-nw-dark-bg-tertiary p-2 rounded min-h-[100px]"></div>
+                        <div class="bg-gray-50 dark:bg-nw-dark-bg-tertiary rounded p-1">
+                            <h3 class="text-xs font-bold text-green-700 dark:text-green-400 mb-1 text-center">🟩 WOOD</h3>
+                            <div id="woodRefinedOutput" class="text-xs max-h-48 overflow-y-auto"></div>
                         </div>
-                        <div>
-                            <h3 class="text-sm font-bold text-gray-700 dark:text-gray-400 mb-2">⬛ Metal Results</h3>
-                            <div id="metalRefinedOutput" class="bg-gray-50 dark:bg-nw-dark-bg-tertiary p-2 rounded min-h-[100px]"></div>
+                        <div class="bg-gray-50 dark:bg-nw-dark-bg-tertiary rounded p-1">
+                            <h3 class="text-xs font-bold text-gray-700 dark:text-gray-400 mb-1 text-center">⬛ METAL</h3>
+                            <div id="metalRefinedOutput" class="text-xs max-h-48 overflow-y-auto"></div>
                         </div>
-                        <div>
-                            <h3 class="text-sm font-bold text-stone-700 dark:text-stone-400 mb-2">⬜ Stone Results</h3>
-                            <div id="stoneRefinedOutput" class="bg-gray-50 dark:bg-nw-dark-bg-tertiary p-2 rounded min-h-[100px]"></div>
+                        <div class="bg-gray-50 dark:bg-nw-dark-bg-tertiary rounded p-1">
+                            <h3 class="text-xs font-bold text-stone-700 dark:text-stone-400 mb-1 text-center">⬜ STONE</h3>
+                            <div id="stoneRefinedOutput" class="text-xs max-h-48 overflow-y-auto"></div>
                         </div>
                     </div>
                 </div>
@@ -54,6 +54,41 @@ function generateMaterialsPage() {
             </div>
         </div>
     `;
+}
+
+function generateCompactMaterialCategories() {
+    const categories = [
+        { name: 'LEATHER', icon: '🟫', items: ['Rawhide', 'Thick Hide', 'Iron Hide', 'Dark Hide', 'Scarhide', 'Aged Tannin'], color: 'amber' },
+        { name: 'CLOTH', icon: '🟦', items: ['Fibers', 'Silk Threads', 'Wirefiber', 'Spinfiber', 'Scalecloth', 'Wireweave'], color: 'blue' },
+        { name: 'WOOD', icon: '🟩', items: ['Green Wood', 'Aged Wood', 'Wyrdwood', 'Ironwood', 'Runewood', 'Wildwood', 'Obsidian Sandpaper'], color: 'green' },
+        { name: 'METAL', icon: '⬛', items: ['Iron Ore', 'Starmetal Ore', 'Orichalcum Ore', 'Mythril Ore', 'Cinnabar', 'Obsidian Flux', 'Charcoal'], color: 'gray' },
+        { name: 'STONE', icon: '⬜', items: ['Stone', 'Lodestone', 'Loamy Lodestone', 'Powerful Gemstone Dust', 'Pure Solvent', 'Obsidian Sandpaper'], color: 'stone' }
+    ];
+    
+    return categories.map(category => `
+        <div class="bg-gray-50 dark:bg-nw-dark-bg-tertiary rounded border border-gray-200 dark:border-nw-border">
+            <div class="category-header bg-${category.color}-50 dark:bg-${category.color}-900/10 px-1 py-1 rounded-t border-b border-${category.color}-600 dark:border-nw-gold">
+                <span class="font-medium text-xs text-${category.color}-800 dark:text-nw-gold">${category.icon} ${category.name}</span>
+            </div>
+            <div class="category-content p-1 space-y-0.5">
+                ${category.items.map(item => {
+                    // Create unique IDs for items that appear in multiple categories
+                    const baseId = item.replace(/\s/g, '');
+                    const inputId = (item === 'Obsidian Sandpaper' && category.name === 'STONE') ? 'StoneObsidianSandpaper' : baseId;
+                    const shortName = item.length > 12 ? item.substring(0, 11) + '..' : item;
+                    return `
+                        <div class="flex gap-1 items-center">
+                            <label class="text-xs flex-1 text-gray-700 dark:text-nw-text-light truncate" title="${item}">${shortName}</label>
+                            <input type="number" id="base${inputId}" placeholder="0" min="0" 
+                                   class="material-input w-14 px-1 py-0 text-xs rounded border border-gray-300 dark:border-nw-border bg-white dark:bg-nw-dark-bg text-gray-900 dark:text-nw-text-light"
+                                   data-material="${item}"
+                                   data-category="${category.name.toLowerCase()}">
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `).join('');
 }
 
 function generateMaterialCategories() {
@@ -163,6 +198,11 @@ function initializeBaseMaterialPrices() {
 }
 
 function handleMaterialInput(event) {
+    // Skip if we're programmatically updating inputs
+    if (window.updatingMaterialInputs) {
+        return;
+    }
+    
     const material = event.target.dataset.material;
     const inputCategory = event.target.dataset.category;
     const quantity = parseInt(event.target.value) || 0;
