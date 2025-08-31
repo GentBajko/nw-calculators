@@ -56,14 +56,17 @@ function displayRefinedResults(elementId, results, sortByROI = true) {
     
     container.innerHTML = '';
     
-    // Create compact header for materials page
+    // Create header with all columns
     const header = document.createElement('div');
-    header.className = 'grid grid-cols-4 gap-1 pb-1 border-b border-gray-300 dark:border-nw-border font-bold text-xs text-gray-700 dark:text-nw-text-light';
+    header.className = 'grid grid-cols-7 gap-0.5 pb-0.5 border-b border-gray-300 dark:border-nw-border font-bold text-xs text-gray-700 dark:text-nw-text-light';
     header.innerHTML = `
-        <div class="pl-1">Item</div>
-        <div class="text-center">Qty</div>
-        <div class="text-center">Profit</div>
-        <div class="text-center">ROI</div>
+        <div class="pl-0.5 truncate">Item</div>
+        <div class="text-center">Q</div>
+        <div class="text-center">Mkt</div>
+        <div class="text-center">Cost</div>
+        <div class="text-center">Rev</div>
+        <div class="text-center">$</div>
+        <div class="text-center">%</div>
     `;
     container.appendChild(header);
     
@@ -99,7 +102,7 @@ function displayRefinedResults(elementId, results, sortByROI = true) {
         
         if (result) {
             // Item can be crafted
-            row.className = 'grid grid-cols-4 gap-1 py-0.5 text-xs rounded px-1 text-gray-700 dark:text-nw-text-light';
+            row.className = 'grid grid-cols-7 gap-0.5 py-0.5 text-xs rounded px-0.5 text-gray-700 dark:text-nw-text-light';
             
             // Assign color based on ROI ranking
             let colorClass = 'roi-neutral';
@@ -124,24 +127,32 @@ function displayRefinedResults(elementId, results, sortByROI = true) {
             row.classList.add(colorClass);
             
             const qty = Math.floor(result.qty);
-            const profit = result.profit * qty;
-            const displayName = result.name.length > 12 ? result.name.substring(0, 11) + '..' : result.name;
+            const totalCost = result.totalCost || (result.cost * qty);  // Use totalCost if available
+            const totalRevenue = result.price * qty;
+            const profit = totalRevenue - totalCost;
+            const displayName = result.name.length > 10 ? result.name.substring(0, 9) + '..' : result.name;
             
             row.innerHTML = `
-                <div class="font-medium truncate pl-1" title="${result.name}">${displayName}</div>
+                <div class="font-medium truncate pl-0.5" title="${result.name}">${displayName}</div>
                 <div class="text-center font-bold">${qty}</div>
+                <div class="text-center">${result.price.toFixed(0)}</div>
+                <div class="text-center">${totalCost.toFixed(0)}</div>
+                <div class="text-center">${totalRevenue.toFixed(0)}</div>
                 <div class="text-center font-semibold ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}">${profit >= 0 ? '+' : ''}${profit.toFixed(0)}</div>
                 <div class="text-center font-bold">${result.roi.toFixed(0)}%</div>
             `;
         } else {
             // Item cannot be crafted - show as disabled
-            row.className = 'grid grid-cols-4 gap-1 py-0.5 text-xs rounded px-1 text-gray-400 dark:text-gray-600 opacity-50';
-            const displayName = itemName.length > 12 ? itemName.substring(0, 11) + '..' : itemName;
+            row.className = 'grid grid-cols-7 gap-0.5 py-0.5 text-xs rounded px-0.5 text-gray-400 dark:text-gray-600 opacity-50';
+            const displayName = itemName.length > 10 ? itemName.substring(0, 9) + '..' : itemName;
             const dailyLimit = dailyLimits[itemName] ? ` (${dailyLimits[itemName]}/d)` : '';
             
             row.innerHTML = `
-                <div class="truncate pl-1" title="${itemName}">${displayName}${dailyLimit}</div>
+                <div class="truncate pl-0.5" title="${itemName}">${displayName}${dailyLimit}</div>
                 <div class="text-center">0</div>
+                <div class="text-center">-</div>
+                <div class="text-center">-</div>
+                <div class="text-center">-</div>
                 <div class="text-center">-</div>
                 <div class="text-center">-</div>
             `;
