@@ -8,7 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Generate page content
     generateCraftingPage();
-    generateMaterialsPage();
+    
+    // Always use advanced mode (legacy mode removed)
+    window.advancedMaterialsPage.generateAdvancedMaterialsPage();
+    // Need to initialize after page is generated
+    setTimeout(() => {
+        window.advancedMaterialsPage.initializeAdvancedCalculations();
+    }, 100);
     
     // Load saved prices
     loadPrices();
@@ -109,7 +115,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Update calculations if on materials page
                     const materialsPage = document.getElementById('materialsPage');
                     if (materialsPage && !materialsPage.classList.contains('hidden')) {
-                        calculateBaseMaterials();
+                        // Trigger advanced calculations
+                        window.advancedMaterialsPage.handleAdvancedInput();
                     }
                 });
             }

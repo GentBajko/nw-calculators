@@ -1,10 +1,10 @@
-// Crafting bonuses (percentage increase in output)
+// Crafting bonuses (percentage increase in output) - Level 250 values
 const craftingBonuses = {
     // Leather
     'Coarse Leather': 50,
     'Rugged Leather': 48,
     'Layered Leather': 45,
-    'Infused Leather': 38,
+    'Infused Leather': 43,  // Corrected from 38 to 43
     'Dark Leather': 30,
     'Runic Leather': 25,
     'Prismatic Leather': 20,
@@ -13,7 +13,7 @@ const craftingBonuses = {
     'Linen': 50,
     'Sateen': 48,
     'Silk': 45,
-    'Infused Silk': 38,
+    'Infused Silk': 43,  // Corrected from 38 to 43
     'Spinweave Cloth': 30,
     'Phoenixweave': 25,
     'Prismatic Cloth': 20,
@@ -22,7 +22,7 @@ const craftingBonuses = {
     'Timber': 50,
     'Lumber': 48,
     'Wyrdwood Plank': 45,
-    'Ironwood Plank': 38,
+    'Ironwood Plank': 43,  // Corrected from 38 to 43
     'Runewood Plank': 30,
     'Glittering Ebony': 25,
     'Prismatic Plank': 20,
@@ -32,7 +32,7 @@ const craftingBonuses = {
     'Charcoal': 50,
     'Steel Ingot': 48,
     'Starmetal Ingot': 45,
-    'Orichalcum Ingot': 38,
+    'Orichalcum Ingot': 43,  // Corrected from 38 to 43
     'Mythril Ingot': 30,
     'Asmodeum': 25,
     'Prismatic Ingot': 20,
@@ -41,7 +41,7 @@ const craftingBonuses = {
     'Stone Block': 50,
     'Stone Brick': 48,
     'Lodestone Brick': 45,
-    'Obsidian Voidstone': 38,
+    'Obsidian Voidstone': 38,  // Remains 38 as per instructions
     'Runic Voidstone': 30,
     'Runestone': 25,
     'Prismatic Block': 20

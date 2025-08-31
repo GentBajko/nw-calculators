@@ -51,29 +51,30 @@
         
         <!-- Page Tabs -->
         <div class="flex gap-2 mb-4 border-b-2 border-gray-200 dark:border-nw-border">
-            <button class="page-tab px-4 py-2 font-medium transition-colors text-nw-teal-dark dark:text-nw-gold border-b-4 border-nw-teal-dark dark:border-nw-gold" onclick="showCraftingPage()">
+            <button class="page-tab px-4 py-2 font-medium transition-colors text-gray-600 dark:text-gray-400 border-b-3 border-transparent hover:text-nw-teal-dark dark:hover:text-nw-gold" onclick="showCraftingPage()">
                 🎯 Crafting Calculator
             </button>
-            <button class="page-tab px-4 py-2 font-medium transition-colors text-gray-600 dark:text-gray-400 border-b-3 border-transparent hover:text-nw-teal-dark dark:hover:text-nw-gold" onclick="showMaterialsPage()">
+            <button class="page-tab px-4 py-2 font-medium transition-colors text-nw-teal-dark dark:text-nw-gold border-b-4 border-nw-teal-dark dark:border-nw-gold" onclick="showMaterialsPage()">
                 🌿 Base Materials Analysis
             </button>
         </div>
         
         <!-- Crafting Page -->
-        <div id="craftingPage" class="page-content"></div>
+        <div id="craftingPage" class="page-content hidden"></div>
         
         <!-- Materials Analysis Page -->
-        <div id="materialsPage" class="page-content hidden"></div>
+        <div id="materialsPage" class="page-content"></div>
     </div>
     
     <!-- Load JavaScript modules -->
     <script src="js/data/recipes.js"></script>
     <script src="js/data/materials.js"></script>
     <script src="js/core/calculator.js"></script>
+    <script src="js/core/advanced-calculator.js"></script>
     <script src="js/core/storage.js"></script>
     <script src="js/ui/pricing-table.js"></script>
     <script src="js/ui/crafting-page.js"></script>
-    <script src="js/ui/materials-page.js"></script>
+    <script src="js/ui/materials-page-advanced.js"></script>
     <script src="js/ui/display.js"></script>
     <script src="js/main.js"></script>
 </body>

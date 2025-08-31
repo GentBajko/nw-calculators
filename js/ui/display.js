@@ -1,4 +1,6 @@
 // UI Display functions
+
+// Legacy toggle function removed - advanced mode is now the default and only mode
 function displayMaterials() {
     const materialsDiv = document.getElementById('requiredMaterials');
     if (!materialsDiv) return;
